@@ -1,119 +1,115 @@
-S/W Detailed Level Design (DLD)
-Project Name: Admin Panel Console Application (C++)
-Author: Rustam Zaloldinov, Ekaterina Lugovets
-Approver: Rustam Zaloldinov – Mid-developer
-Date: October 2025
-Team: Software Engineering Team
- 
-1. Overview
+# Admin Panel Console Application (C++)
 
-This document presents the Detailed Level Design (DLD) for the Admin Panel Console Application built in C++.
-The system provides administrative functionality to manage users and their listings.
-It allows creation, deletion, search, and data display for user and listing entities.
-This DLD aligns with Agile development principles and reflects the software’s architectural and modular structure.
+A simple console application to manage Users and their Listings. It demonstrates a clean separation of concerns with repository abstraction, domain validation, and structured exception handling.
 
-2. System Overview / Architectural Context
+- Language/Std: C++20
+- Build system: CMake
+- Target: `AdminPanel` (console executable)
 
-The Admin Panel system follows a layered architecture divided into three core modules:
+## Features
+- Manage Users: create, delete, list, and find by ID
+- Manage Listings per User: create and delete
+- Domain validation with clear error messages
+- Duplicate detection for users and listings
+- Repository interface (`IUserRepository`) enabling future file/DB storage
 
-1. Presentation Layer (Console UI)
-   - Handles text-based user interaction through console commands and menu navigation.
-2. Logic Layer (Core / AdminPanel)
-   - Contains business logic for managing users, listings, and their relationships.
-3. Data Layer (Models)
-   - Encapsulates data entities (User, Listing) with attributes and relationships.
+## Validation Rules
+- User `age` must be > 0
+- Listing `price` must be ≥ 0
+- Duplicate user (same `name` + `lastName`, case-insensitive) is forbidden
+- Duplicate listing title per user (case-insensitive) is forbidden
 
-Each layer interacts only with the layer directly below it:
-ConsoleUI → AdminPanel → User / Listing.
+Violations raise `ValidationException` or `DuplicateEntryException`.
 
-3. UML Class Diagram (Technical Design)
+## Exceptions
+- `ValidationException` — invalid input domain rules
+- `DuplicateEntryException` — duplicate user or listing
+- `NotFoundException` — missing user or listing
 
-The following describes the main classes and their relationships:
+All user actions in the UI are wrapped with try/catch and show friendly error messages.
 
-- Class `AdminPanel`
-    - Has a composition relationship with `User` (AdminPanel owns multiple User objects)
-- Class `User`
-    - Aggregates multiple `Listing` objects
-- Class `Listing`
-    - Represents an individual item or record owned by a User
+## Architecture Overview
+- Presentation (Console UI): `src/core/AdminPanel.{h,cpp}` handles input/output and commands
+- Domain Models: `src/models/User/*`, `src/models/Listing/*`
+- Repository Abstraction:
+  - Interface: `src/core/repository/IUserRepository.h`
+  - In-memory implementation: `src/core/repository/InMemoryUserRepository.{h,cpp}` (default)
+- Exceptions: `src/core/exceptions/DomainExceptions.h`
 
-Relationships:
-AdminPanel → manages → User → has → Listing
+The UI depends only on the `IUserRepository` interface, so you can swap in a different implementation (e.g., `FileUserRepository`) later without changing the UI.
 
-4. Class Specifications
-Class	Attributes	Methods
-Listing	id: int
- title: string
- description: string
- price: double	N/A (Data structure only)
-User	id: int
- name: string
- lastName: string
- age: int
- gender: string
- address: string
- listings: vector<Listing>	N/A (Used by AdminPanel)
-AdminPanel	users: vector<User>
- nextUserId: int
- nextListingId: int	run()
- createUser()
- deleteUser()
- searchUser()
- showAllUsers()
- createListing()
- deleteListing()
-5. Interfaces and Abstractions
+## Build and Run
+Using CLion (recommended):
+- Open the project. CLion configures a Debug profile automatically.
+- Build target: `AdminPanel`
+- Run target: `AdminPanel`
 
-At this stage, the system is implemented without formal interface classes.
-Future abstraction layers may include:
-- IStorage (for file or database persistence)
-- IPrintable (for exportable reports)
+Command line (example):
+```
+cmake -S . -B cmake-build-debug
+cmake --build cmake-build-debug --target AdminPanel
+./cmake-build-debug/AdminPanel
+```
 
-6. Function Responsibilities
-Class	Method	Purpose	Input	Output
-AdminPanel	createUser()	Creates a new user and adds to vector<User>	User details via console input	User added to system
-AdminPanel	createListing()	Creates a listing for a given user	User ID and listing data	Listing added to selected user
-7. Operation Flow
+In this workspace, the active profile is `Debug` with build dir `/Users/sunflower/CLionProjects/AdminPanel/cmake-build-debug`.
 
-1. The Admin launches the console application.
-2. AdminPanel::run() displays menu options.
-3. The admin selects an option (e.g., createUser).
-4. The corresponding method executes, modifying in-memory user data.
-5. Users may have listings created, viewed, or deleted.
-6. The flow loops until exit (option 0) is selected.
+## Usage
+When you start the app you’ll see a menu like:
+```
+==== Admin Panel ====
+1. Create user
+2. Delete user
+3. Find user by ID
+4. Show all users
+5. Create listing for certain user
+6. Remove listing for certain user
+0. Logout
+```
+- Enter values when prompted. Multiline text is supported for `address` and `description` via `getline` where applicable.
+- Invalid inputs (age 0, negative price, duplicates) will display a clear error and the app keeps running.
 
-Flow: ConsoleUI → AdminPanel → User / Listing
+## Example
+- Try creating a user with age `0`: you will get a validation error.
+- Create a user, then create a listing with price `-1`: you will get a validation error.
+- Create two users with the same `name` and `lastName` (case-insensitive): duplicate error.
+- Create two listings for the same user with the same title (case-insensitive): duplicate error.
 
-8. Enumerations & Constants
+## Project Structure
+```
+CMakeLists.txt
+README.md
+src/
+  main.cpp
+  core/
+    AdminPanel.h
+    AdminPanel.cpp
+    exceptions/DomainExceptions.h
+    repository/
+      IUserRepository.h
+      InMemoryUserRepository.h
+      InMemoryUserRepository.cpp
+  models/
+    User/
+      User.h
+      User.cpp
+    Listing/
+      Listing.h
+      Listing.cpp
+docs/
+  DLD.md
+```
 
-No enumerations currently defined.
-Possible future additions: Gender (Enum), CommandType (Enum)
+## Documentation
+See `docs/DLD.md` for the Detailed Level Design (DLD), including:
+- Validation table
+- Exception table
+- Activity diagram and Sequence diagram for `createUser`
 
-9. Validation Rules & Future Work
+## Next Steps (optional)
+- Implement `FileUserRepository` that persists users/listings to disk and implements `IUserRepository`
+- Trim/normalize whitespace for input fields before validation and duplicate checks
+- Add tests and logging
 
-Validation Rules:
-- Age must be positive integer.
-- Price must be non-negative.
-
-Future Enhancements:
-- Data persistence (File/JSON)
-- Admin authentication system
-- Enhanced UI (menu formatting and color)
-- Logging and error handling
-
-10. Traceability Matrix
-Mapping between SRS requirements and implemented design elements:
-Requirement (SRS)	Class / Method (DLD)
-Admin can manage users	AdminPanel::createUser(), deleteUser(), showAllUsers()
-Admin can manage listings for users	AdminPanel::createListing(), deleteListing()
-11. Code Structure and File Mapping
-Class	File
-Listing	src/models/Listing.h / Listing.cpp
-User	src/models/User.h / User.cpp
-AdminPanel	src/core/AdminPanel.h / AdminPanel.cpp
-Main Entry Point	src/main.cpp
-12. Revision History
-Date	Version	Change Summary	Author
-27-Oct-2025	1.0	Initial Detailed Design Document created for Admin Panel System	Rustam Zaloldinov
-
-<img width="432" height="193" alt="image" src="https://github.com/user-attachments/assets/d1b46926-6c0f-437e-a982-b34f0f92fb0f" />
+## Authors
+- Rustam Zaloldinov
+- Ekaterina Lugovets
