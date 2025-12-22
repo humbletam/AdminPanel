@@ -10,6 +10,8 @@ add_executable(AdminPanel src/main.cpp
         src/core/repository/IUserRepository.h
         src/core/repository/InMemoryUserRepository.h
         src/core/repository/InMemoryUserRepository.cpp
+        src/core/repository/FileUserRepository.h
+        src/core/repository/FileUserRepository.cpp
         src/models/User/User.cpp
         src/models/User/User.h
         src/models/Listing/Listing.cpp

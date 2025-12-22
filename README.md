@@ -11,7 +11,8 @@ A simple console application to manage Users and their Listings. It demonstrates
 - Manage Listings per User: create and delete
 - Domain validation with clear error messages
 - Duplicate detection for users and listings
-- Repository interface (`IUserRepository`) enabling future file/DB storage
+- Repository interface (`IUserRepository`) enabling persistent file storage
+- File-based persistence (`FileUserRepository`) with `data.txt`
 
 ## Validation Rules
 - User `age` must be > 0
@@ -33,10 +34,11 @@ All user actions in the UI are wrapped with try/catch and show friendly error me
 - Domain Models: `src/models/User/*`, `src/models/Listing/*`
 - Repository Abstraction:
   - Interface: `src/core/repository/IUserRepository.h`
-  - In-memory implementation: `src/core/repository/InMemoryUserRepository.{h,cpp}` (default)
+  - In-memory implementation: `src/core/repository/InMemoryUserRepository.{h,cpp}`
+  - File-based implementation: `src/core/repository/FileUserRepository.{h,cpp}` (default)
 - Exceptions: `src/core/exceptions/DomainExceptions.h`
 
-The UI depends only on the `IUserRepository` interface, so you can swap in a different implementation (e.g., `FileUserRepository`) later without changing the UI.
+The UI depends only on the `IUserRepository` interface, so you can swap in a different implementation (e.g., `InMemoryUserRepository`) later without changing the UI.
 
 ## Build and Run
 Using CLion (recommended):
@@ -106,7 +108,6 @@ See `docs/DLD.md` for the Detailed Level Design (DLD), including:
 - Activity diagram and Sequence diagram for `createUser`
 
 ## Next Steps (optional)
-- Implement `FileUserRepository` that persists users/listings to disk and implements `IUserRepository`
 - Trim/normalize whitespace for input fields before validation and duplicate checks
 - Add tests and logging
 

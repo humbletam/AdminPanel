@@ -1,12 +1,12 @@
 #include "AdminPanel.h"
 #include <iostream>
 #include <limits>
-#include "repository/InMemoryUserRepository.h"
+#include "repository/FileUserRepository.h"
 
 using namespace std;
 
 AdminPanel::AdminPanel() {
-    userRepo = new InMemoryUserRepository();
+    userRepo = new FileUserRepository("data.txt");
 }
 
 AdminPanel::~AdminPanel() {
