@@ -1,8 +1,17 @@
 #include "AdminPanel.h"
 #include <iostream>
 #include <limits>
+#include "repository/InMemoryUserRepository.h"
 
 using namespace std;
+
+AdminPanel::AdminPanel() {
+    userRepo = new InMemoryUserRepository();
+}
+
+AdminPanel::~AdminPanel() {
+    delete userRepo;
+}
 
 void AdminPanel::run() {
     int choice;
@@ -28,7 +37,7 @@ void AdminPanel::showMenu() {
     cout << "\n==== Admin Panel ====\n";
     cout << "1. Create user\n";
     cout << "2. Delete user\n";
-    cout << "3. Find your by ID\n";
+    cout << "3. Find user by ID\n";
     cout << "4. Show all users\n";
     cout << "5. Create listing for certain user\n";
     cout << "6. Remove listing for certain user\n";
@@ -36,12 +45,11 @@ void AdminPanel::showMenu() {
 }
 
 void AdminPanel::createUser() {
-    User u;
-    u.id = nextUserId++;
+    User u{};
 
     cout << "Name: ";
     cin >> u.name;
-    cout << "Last-name ";
+    cout << "Last-name: ";
     cin >> u.lastName;
     cout << "Age: ";
     cin >> u.age;
@@ -51,8 +59,16 @@ void AdminPanel::createUser() {
     cout << "Address: ";
     getline(cin, u.address);
 
-    users.push_back(u);
-    cout << "✅ User created! User-ID: " << u.id << endl;
+    try {
+        const User& created = userRepo->createUser(u);
+        cout << "✅ User created! User-ID: " << created.id << endl;
+    } catch (const ValidationException& ex) {
+        cout << "❌ Validation error: " << ex.what() << "\n";
+    } catch (const DuplicateEntryException& ex) {
+        cout << "❌ Duplicate: " << ex.what() << "\n";
+    } catch (const std::exception& ex) {
+        cout << "❌ Error: " << ex.what() << "\n";
+    }
 }
 
 void AdminPanel::deleteUser() {
@@ -60,14 +76,12 @@ void AdminPanel::deleteUser() {
     cout << "Remove user by ID: ";
     cin >> id;
 
-    for (auto it = users.begin(); it != users.end(); ++it) {
-        if (it->id == id) {
-            users.erase(it);
-            cout << "✅ User deleted successfully\n";
-            return;
-        }
+    try {
+        userRepo->deleteUserById(id);
+        cout << "✅ User deleted successfully\n";
+    } catch (const NotFoundException& ex) {
+        cout << "❌ " << ex.what() << "\n";
     }
-    cout << "❌ User not found\n";
 }
 
 void AdminPanel::searchUser() {
@@ -75,22 +89,22 @@ void AdminPanel::searchUser() {
     cout << "Enter user ID: ";
     cin >> id;
 
-    for (auto& u : users) {
-        if (u.id == id) {
-            printUser(u);
-            return;
-        }
+    User* u = userRepo->findUserById(id);
+    if (u) {
+        printUser(*u);
+    } else {
+        cout << "❌ User not found\n";
     }
-    cout << "❌ User not found\n";
 }
 
 void AdminPanel::showAllUsers() {
+    const auto& users = userRepo->getAllUsers();
     if (users.empty()) {
         cout << "Users List is empty\n";
         return;
     }
 
-    for (auto& u : users) {
+    for (const auto& u : users) {
         printUser(u);
     }
 }
@@ -121,25 +135,25 @@ void AdminPanel::createListing() {
     cout << "Enter user ID to create a listing: ";
     cin >> userId;
 
-    for (auto& u : users) {
-        if (u.id == userId) {
-            Listing l;
-            l.id = nextListingId++;
+    Listing l{};
+    cout << "Title: ";
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    getline(cin, l.title);
+    cout << "Description: ";
+    getline(cin, l.description);
+    cout << "Price: ";
+    cin >> l.price;
 
-            cout << "Title: ";
-            cin.ignore();
-            getline(cin, l.title);
-            cout << "Description: ";
-            getline(cin, l.description);
-            cout << "Price: ";
-            cin >> l.price;
-
-            u.listings.push_back(l);
-            cout << "✅ Listing created! ID: " << l.id << endl;
-            return;
-        }
+    try {
+        const Listing& created = userRepo->addListingToUser(userId, l);
+        cout << "✅ Listing created! ID: " << created.id << endl;
+    } catch (const NotFoundException& ex) {
+        cout << "❌ " << ex.what() << "\n";
+    } catch (const ValidationException& ex) {
+        cout << "❌ Validation error: " << ex.what() << "\n";
+    } catch (const DuplicateEntryException& ex) {
+        cout << "❌ Duplicate: " << ex.what() << "\n";
     }
-    cout << "❌ User with such ID not found\n";
 }
 
 void AdminPanel::deleteListing() {
@@ -149,18 +163,10 @@ void AdminPanel::deleteListing() {
     cout << "For removal, enter listing ID: ";
     cin >> listingId;
 
-    for (auto& u : users) {
-        if (u.id == userId) {
-            for (auto it = u.listings.begin(); it != u.listings.end(); ++it) {
-                if (it->id == listingId) {
-                    u.listings.erase(it);
-                    cout << "✅ Listing deleted\n";
-                    return;
-                }
-            }
-            cout << "❌ Listing not found\n";
-            return;
-        }
+    try {
+        userRepo->deleteListingFromUser(userId, listingId);
+        cout << "✅ Listing deleted\n";
+    } catch (const NotFoundException& ex) {
+        cout << "❌ " << ex.what() << "\n";
     }
-    cout << "❌ User not found\n";
 }

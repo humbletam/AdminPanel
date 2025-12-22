@@ -3,14 +3,17 @@
 
 #include <vector>
 #include "../models/User/User.h"
+#include "repository/IUserRepository.h"
+#include "exceptions/DomainExceptions.h"
 
 class AdminPanel {
 private:
-    std::vector<User> users;
-    int nextUserId = 1;
-    int nextListingId = 1;
+    IUserRepository* userRepo;
 
 public:
+    AdminPanel();
+    ~AdminPanel();
+
     void run();
 
 private:
